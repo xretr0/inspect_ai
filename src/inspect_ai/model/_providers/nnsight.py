@@ -41,7 +41,6 @@ class NNSightAPI(ModelAPI):
         assert isinstance(self.model, LanguageModel), "nnsight_model must be a nnsight.LanguageModel"
 
         # Get the hook that stores the activations from the external code
-        assert "nnsight_hook" in model_args, "nnsight_hook is required in model_args"
         self.hook: Callable[[str], None] = model_args.get("nnsight_hook", default_hook)
         assert isinstance(self.hook, Callable), "nnsight_hook must be a of type Callable[[str], None]"
 
