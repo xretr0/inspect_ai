@@ -22,7 +22,6 @@ from inspect_ai.tool import (
     ToolInfo,
 )
 
-
 class NNSightAPI(ModelAPI):
     def __init__(
         self,
@@ -40,9 +39,12 @@ class NNSightAPI(ModelAPI):
         self.model: LanguageModel = model_args["nnsight_model"]
         assert isinstance(self.model, LanguageModel), "nnsight_model must be a nnsight.LanguageModel"
 
-        # Get the hook that stores the activations from the external code
-        self.hook: Callable[[str], None] = model_args.get("nnsight_hook", default_hook)
-        assert isinstance(self.hook, Callable), "nnsight_hook must be a of type Callable[[str], None]"
+        # This lets the user modify the generate context using a hooking function
+        assert "nnsight_args" in model_args, "nnsight_args is required in model_args"
+        self.nnsight_args = model_args["nnsight_args"]
+        assert isinstance(self.nnsight_args, dict), "nnsight_args must be a dictionary"
+        assert "hook" in self.nnsight_args, "nnsight_args must be a dictionary with a 'hook' key"
+        assert isinstance(self.nnsight_args["hook"], Callable), "nnsight_args['hook'] must be a of type Callable[[], None]"
 
         # This lets the user specify the way the chat history is converted into a string
         self.chat_history_parser: Callable[[list[ChatMessage]], str] = model_args.get("chat_history_parser", default_chat_history_parser)
@@ -60,7 +62,7 @@ class NNSightAPI(ModelAPI):
         max_new_tokens = config.max_tokens or 100  # The default for nnsight is only 1, for convenience we set it to 100
 
         with self.model.generate(input_str, max_new_tokens=max_new_tokens):
-            self.hook(input_str)
+            self.nnsight_args["hook"]()
             output = self.model.generator.output.save()
         
         input_token_length = len(self.model.tokenizer.encode(input_str))
@@ -111,7 +113,6 @@ def default_chat_history_parser(messages: list[ChatMessage]) -> str:
 
     return out
 
-
-def default_hook(input: str) -> None:
+def default_hook() -> None:
     """Default hook that does nothing."""
     pass
