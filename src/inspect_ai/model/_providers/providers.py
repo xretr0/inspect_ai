@@ -307,6 +307,14 @@ def transformer_lens() -> type[ModelAPI]:
     return TransformerLensAPI
 
 
+@modelapi(name="custom")
+def custom() -> type[ModelAPI]:
+    # No dependencies required
+    from .custom import CustomAPI
+
+    return CustomAPI
+
+
 @modelapi(name="none")
 def none() -> type[ModelAPI]:
     from .none import NoModel
