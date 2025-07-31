@@ -307,6 +307,23 @@ def transformer_lens() -> type[ModelAPI]:
     return TransformerLensAPI
 
 
+@modelapi(name="nnsight")
+def nnsight() -> type[ModelAPI]:
+    FEATURE = "NNSight API"
+    PACKAGE = "nnsight"
+
+    # verify we have the package
+    try:
+        import nnsight  # type: ignore # noqa: F401
+    except ImportError:
+        raise pip_dependency_error(FEATURE, [PACKAGE])
+
+    # in the clear
+    from .nnsight import NNSightAPI
+
+    return NNSightAPI
+
+
 @modelapi(name="custom")
 def custom() -> type[ModelAPI]:
     # No dependencies required

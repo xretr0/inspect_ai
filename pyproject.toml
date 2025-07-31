@@ -171,6 +171,7 @@ dev = [
   "together",
   "textual-dev>=0.86.2",
   "transformer-lens",
+  "nnsight",
   "trio",
   "pandas-stubs",
   "pyarrow-stubs",
