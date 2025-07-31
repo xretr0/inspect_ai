@@ -43,8 +43,10 @@ class NNSightAPI(ModelAPI):
         assert "nnsight_args" in model_args, "nnsight_args is required in model_args"
         self.nnsight_args = model_args["nnsight_args"]
         assert isinstance(self.nnsight_args, dict), "nnsight_args must be a dictionary"
-        assert "hook" in self.nnsight_args, "nnsight_args must be a dictionary with a 'hook' key"
-        assert isinstance(self.nnsight_args["hook"], Callable), "nnsight_args['hook'] must be a of type Callable[[], None]"
+        if "hook" in self.nnsight_args:
+            assert isinstance(self.nnsight_args["hook"], Callable), "nnsight_args['hook'] must be a of type Callable[[], None]"
+        else:
+            self.nnsight_args["hook"] = default_hook
 
         # This lets the user specify the way the chat history is converted into a string
         self.chat_history_parser: Callable[[list[ChatMessage]], str] = model_args.get("chat_history_parser", default_chat_history_parser)
