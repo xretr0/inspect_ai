@@ -37,18 +37,17 @@ class NNSightAPI(ModelAPI):
 
         # Get the model from external code that initialized it
         assert "nnsight_model" in model_args, "nnsight_model is required in model_args"
-        assert isinstance(model_args["nnsight_model"], LanguageModel), (
-            "nnsight_model must be a nnsight.LanguageModel"
-        )
+        self.model: LanguageModel = model_args["nnsight_model"]
+        assert isinstance(self.model, LanguageModel), "nnsight_model must be a nnsight.LanguageModel"
 
         # Get the hook that stores the activations from the external code
         assert "nnsight_hook" in model_args, "nnsight_hook is required in model_args"
-        assert isinstance(model_args["nnsight_hook"], Callable), (
-            "nnsight_hook must be a function that takes a the input string and returns nothing"
-        )
+        self.hook: Callable[[str], None] = model_args.get("nnsight_hook", default_hook)
+        assert isinstance(self.hook, Callable), "nnsight_hook must be a of type Callable[[str], None]"
 
-        self.model: LanguageModel = model_args["nnsight_model"]
-        self.hook: Callable[[str], None] = model_args["nnsight_hook"]
+        # This lets the user specify the way the chat history is converted into a string
+        self.chat_history_parser: Callable[[list[ChatMessage]], str] = model_args.get("chat_history_parser", default_chat_history_parser)
+        assert isinstance(self.chat_history_parser, Callable), "chat_history_parser must be a of type Callable[[list[ChatMessage]], str]"
 
     async def generate(
         self,
@@ -57,7 +56,7 @@ class NNSightAPI(ModelAPI):
         tool_choice: ToolChoice,
         config: GenerateConfig,
     ) -> ModelOutput:
-        input_str = message_content_to_string(input)
+        input_str = self.chat_history_parser(input)
 
         max_new_tokens = config.max_tokens or 100  # The default for nnsight is only 1, for convenience we set it to 100
 
@@ -92,7 +91,7 @@ class NNSightAPI(ModelAPI):
         )
 
 
-def message_content_to_string(messages: list[ChatMessage]) -> str:
+def default_chat_history_parser(messages: list[ChatMessage]) -> str:
     """Convert list of content in `ChatMessageAssistant`, `ChatMessageUser` or `ChatMessageSystem` to a string.
 
     Modified from the HuggingFace provider.
@@ -112,3 +111,8 @@ def message_content_to_string(messages: list[ChatMessage]) -> str:
         out += f"{message.role}: {message.content}\n"
 
     return out
+
+
+def default_hook(input: str) -> None:
+    """Default hook that does nothing."""
+    pass
