@@ -44,7 +44,7 @@ class NNSightAPI(ModelAPI):
         self.nnsight_args = model_args["nnsight_args"]
         assert isinstance(self.nnsight_args, dict), "nnsight_args must be a dictionary"
         if "hook" in self.nnsight_args:
-            assert isinstance(self.nnsight_args["hook"], Callable), "nnsight_args['hook'] must be a of type Callable[[], None]"
+            assert isinstance(self.nnsight_args["hook"], Callable), "nnsight_args['hook'] must be a of type Callable[[LanguageModel, str, Any], None]"
         else:
             self.nnsight_args["hook"] = default_hook
 
@@ -63,8 +63,8 @@ class NNSightAPI(ModelAPI):
 
         max_new_tokens = config.max_tokens or 100  # The default for nnsight is only 1, for convenience we set it to 100
 
-        with self.model.generate(input_str, max_new_tokens=max_new_tokens):
-            self.nnsight_args["hook"]()
+        with self.model.generate(input_str, max_new_tokens=max_new_tokens) as tracer:
+            self.nnsight_args["hook"](model=self.model, input_str=input_str, tracer=tracer)
             output = self.model.generator.output.save()
         
         input_token_length = len(self.model.tokenizer.encode(input_str))
@@ -115,6 +115,6 @@ def default_chat_history_parser(messages: list[ChatMessage]) -> str:
 
     return out
 
-def default_hook() -> None:
+def default_hook(model: LanguageModel, input_str: str, tracer: Any) -> None:
     """Default hook that does nothing."""
     pass
